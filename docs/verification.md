@@ -19,6 +19,7 @@ The builder retains the original workspace's data/output defaults and adds stand
 | Original workspace paths | Passed; original parent cache, signing folder and download locations are retained |
 | Explicit data/output overrides | Passed; both overrides select their documented locations |
 | Full portable build | Passed on Windows x64 with Python 3.13 |
+| Fresh GitHub runner and cold tool downloads | Passed; all five locked inputs downloaded and the full verification pipeline completed |
 | Pure-Java connection/origin tests | All 54 checks passed |
 | APK v2/v3 signature verification | Passed using a newly generated disposable test key |
 | Public CA validation and packaged-byte comparison | Passed |
@@ -36,7 +37,7 @@ The optional icon test used the existing developer Python environment with Pillo
 
 The JDK reported Java 8 compatibility/deprecated-API compiler warnings; they did not prevent compilation or verification. No blanket warning-free build claim is made.
 
-Cold download availability is checked by the Windows CI workflow after publication. This local record confirms input hashes and the build using cached locked tools; it does not claim a separate cold-network download test.
+The first [GitHub Windows verification run](https://github.com/haywoodspartan/story-writer-android/actions/runs/37568134512) completed successfully from the published source. It downloaded all five locked inputs on the runner, passed all 54 origin tests, and verified the signed APK. The workflow uses current checkout/Python-setup action releases for subsequent runs.
 
 ## Checks requiring a device or separate environment
 
