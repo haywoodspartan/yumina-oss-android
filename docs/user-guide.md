@@ -10,15 +10,15 @@ The selected service/server supplies the main interface and its available featur
 
 ## Before installation
 
-Check that the device runs Android 8.0 or newer and has an enabled, working Android WebView provider. For native Yumina.io, connect to the Internet. For a private self-hosted version, use the network or VPN that reaches it. Open the selected address in the phone's browser as a useful network diagnostic. Browser trust and app trust can differ because the app has an additional bundled certificate authority.
+Check that the device runs Android 8.0 or newer and has an enabled, working Android WebView provider. For native Yumina.io, connect to the Internet. For a private self-hosted version, use the network or VPN that reaches it. Open the selected address in the phone's browser as a useful network diagnostic. The app uses system/user CAs and can additionally remember a certificate you explicitly accept for a custom HTTPS server. Its saved exceptions do not change the external browser's trust.
 
-Obtain the APK from the app maintainer or your self-hosted server administrator. The original custom deployment offers `/app/android` and serves `yumina-android.apk` with a companion SHA-256 checksum; that installation page is not a requirement for native Yumina.io. Installing an APK is separate from signing in; possession of the APK does not create a service account.
+Obtain the APK from the app maintainer or your self-hosted server administrator. A custom deployment may offer `/app/android` and serve `yumina-android.apk` with a companion SHA-256 checksum; that installation page is not a requirement for native Yumina.io. Installing an APK is separate from signing in; possession of the APK does not create a service account.
 
 Android asks the installing source, such as the browser, for permission to install applications from that source. Device manufacturers use different wording. This is an Android installation setting rather than an additional application runtime permission.
 
 ## First connection
 
-Launch the installed **Yumina** application. On a fresh installation the connection screen opens a **Server address** dialog. Enter `https://yumina.io` for the native hosted service or the origin of your custom self-hosted Yumina installation.
+Launch the installed **Yumina OSS Android** application. On a fresh installation the connection screen opens a **Server address** dialog. Enter `https://yumina.io` for the native hosted service or the origin of your custom self-hosted Yumina installation.
 
 | Example | Meaning |
 | --- | --- |
@@ -42,7 +42,7 @@ Use the main interface as you would in the server's browser UI. The currently as
 
 The native client does not elevate permissions. An administrator sees administrator tools because the server authorizes that account. A restricted account retains its restrictions when using the APK.
 
-An ordinary server web UI update appears after the page reloads. It does not require rebuilding the APK. Native changes such as a revised file export implementation, a new trust anchor, or different connection handling require installing a new APK.
+An ordinary server web UI update appears after the page reloads. It does not require rebuilding the APK. Native changes such as a revised file export implementation, different certificate handling, or different connection handling require installing a new APK.
 
 ## App options
 
@@ -55,12 +55,15 @@ The compatible current web UI includes **App options** in the phone menu, accoun
 | Open in browser | Open the current same-origin page in an external browser; otherwise use the server origin |
 | Clear local login and cache | After confirmation, clear app WebView cookies, web storage, cached pages, and rebuild the WebView |
 | About this app | Show the app version and explain server requirements and file support |
+| Server certificate | Inspect the certificate accepted for this HTTPS origin or forget it |
 
 Older compatible web UIs that do not advertise the integrated options link get a small native overflow button. When the server cannot load, the native recovery screen still exposes App options and Retry connection.
 
 Changing servers creates a fresh WebView navigation history. It does not intentionally erase the previous server's account or server-side data. Finish or cancel an active file export before changing the server or clearing local login.
 
-Clearing local login applies to WebView cookies and web storage for all servers used inside this app. It leaves the selected connection address in native preferences and leaves stories/books on the server. A new sign-in may be necessary.
+Certificate exceptions are managed separately under **Server certificate**. Clearing local login applies to WebView cookies and web storage for all servers used inside this app. It leaves the selected connection address in native preferences and leaves stories/books on the server. A new sign-in may be necessary.
+
+For a private HTTPS server with an untrusted issuer, the app shows the certificate, issuer, validity period and SHA-256 fingerprint. Compare the fingerprint with the administrator through a separate trusted channel, then choose **Trust certificate** to save it for that exact HTTPS origin. Changed certificates require a new decision. Expired, not-yet-valid, or hostname-mismatched certificates cannot be accepted. See [Custom server certificates](custom-server-certificates.md).
 
 ## Upload a book or image
 
@@ -97,7 +100,7 @@ After interruption, reopen the chat so the compatible server UI can reconnect to
 
 ## Updates and app identity
 
-The current native version is **1.3.0**, version code **8**, with package ID `ai.storywriter.mobile`. An update must use that package ID and the same release signing key to replace an existing installation without resetting its local state.
+The current native version is **1.4.0**, version code **9**, with package ID `io.github.haywoodspartan.yumina.android`. This package installs separately from apps with other package IDs; you can use your existing server account after signing in. An update must use that package ID and the same release signing key to replace an existing installation without resetting its local state.
 
 A debug APK or independently built release with a new signing key cannot replace the existing release in place. Uninstalling removes local app data; server records remain on the server, but local login and address configuration must be recreated.
 

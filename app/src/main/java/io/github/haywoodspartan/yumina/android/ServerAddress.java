@@ -1,4 +1,4 @@
-package ai.storywriter.mobile;
+package io.github.haywoodspartan.yumina.android;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,7 +27,7 @@ public final class ServerAddress {
             String host = uri.getHost().toLowerCase(Locale.ROOT);
             if (host.equals("localhost") || host.endsWith(".localhost") || host.startsWith("127.")
                     || host.equals("[::1]") || host.equals("[0:0:0:0:0:0:0:1]") || host.equals("0.0.0.0"))
-                throw new IllegalArgumentException("Use your PC's Wi-Fi or LAN address. Localhost points to this phone.");
+                throw new IllegalArgumentException("Use yumina.io or your server's reachable address. Localhost points to this phone.");
             return new URI(scheme, null, host, port, "/", null, null).toASCIIString();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("That server address is not valid.");

@@ -1,46 +1,35 @@
-# Standalone repository verification
+# Verification record
 
 [Documentation index](../README.md#documentation)
 
-This record describes verification performed while preparing the Android-only repository on October 6, 2026. It does not claim a fresh device installation or a production server smoke test.
+This record covers Yumina OSS Android **1.4.0**, package `io.github.haywoodspartan.yumina.android`, version code **9**.
 
-## Scope
+## Source and behavior
 
-The extraction includes the Android application source, resources, existing public CA, portable build pipeline, Gradle files, tests, local icon source, upstream notices, CI workflow, and detailed client documentation. Server code, databases, private signing material, caches, and generated APK outputs remain outside tracked source.
+The Android project owns its own build state and uses `YUMINA_ANDROID_*` environment variables. The application, test packages, signing alias/subject, browser user agent, and optional back-navigation hook use the Yumina identity.
 
-The builder retains the original workspace's data/output defaults and adds standalone defaults plus explicit environment overrides. Native Java behavior, package ID, app version, and bundled CA are unchanged.
+The APK has no bundled CA resource. System/user trust remains available, and the native UI can save an exact certificate exception for an explicitly approved custom HTTPS origin. Native same-origin exports use the same exception while retaining hostname verification.
 
-## Verification results
+## Automated validation
 
 | Check | Result |
 | --- | --- |
-| Source-only standalone checkout | Passed; exported only staged repository files into a separate directory |
-| Standalone default paths | Passed; generated data/signing and downloads resolve inside the standalone checkout |
-| Original workspace paths | Passed; original parent cache, signing folder and download locations are retained |
-| Explicit data/output overrides | Passed; both overrides select their documented locations |
-| Full portable build | Passed on Windows x64 with Python 3.13 |
-| Fresh GitHub runner and cold tool downloads | Passed; all five locked inputs downloaded and the full verification pipeline completed |
-| Pure-Java connection/origin tests | All 54 checks passed |
-| APK v2/v3 signature verification | Passed using a newly generated disposable test key |
-| Public CA validation and packaged-byte comparison | Passed |
-| Signed/unsigned APK alignment | Passed |
-| Compiled manifest identity, SDK and permission checks | Passed |
-| Standalone icon regeneration | Passed using the locally preserved source artwork and Pillow |
-| Local documentation links and heading anchors | Passed |
-| Repository whitespace check | Passed |
-| Tracked generated/private-file scan | Passed; no build/cache/download folders or private keystores tracked |
-| Tracked credential/private-key pattern scan | Passed; no matching token/private-key material found |
+| Full portable Windows build | Passed with Python 3.13 and the locked JDK/tools |
+| Server address/origin suite | All 54 checks passed |
+| Certificate trust suite | All 40 checks passed using temporary real X.509 fixtures |
+| APK v2/v3 signature verification | Passed |
+| Signed and unsigned ZIP alignment | Passed |
+| Manifest package, version, activity, SDK and permission checks | Passed |
+| Current tracked source and APK identity scan | Passed; no previous project branding remains |
+| Tracked files and APK certificate/key resource scan | Passed; no bundled CA or private signing material |
+| Documentation links, anchors, and Markdown fences | Passed |
 
-The snapshot reused public build inputs from the existing verified tool cache via hard links. It had no pre-existing signing files and generated a disposable key under its own ignored data directory. The original installation's release key and public APK were not replaced by the test build.
+The certificate suite covers normalized HTTPS origins, port/host/scheme isolation, changed fingerprints, expired and not-yet-valid certificates, DER decoding/size/trailing-data rejection, scoped export factories, invalid chains, trust removal, client-auth isolation, and continued normal platform trust. Temporary fixture keys/certificates are deleted by the test and are not application resources.
 
-The optional icon test used the existing developer Python environment with Pillow. Pillow remains unnecessary for a normal APK build using checked-in icons.
+The JDK reports Java 8/deprecated-API warnings; these do not prevent compilation or verification. Android Studio/Gradle is documented as an alternative build path but has not been exercised for this update.
 
-The JDK reported Java 8 compatibility/deprecated-API compiler warnings; they did not prevent compilation or verification. No blanket warning-free build claim is made.
+## Device checks still required
 
-The first [GitHub Windows verification run](https://github.com/haywoodspartan/yumina-oss-android/actions/runs/37568134512) completed successfully from the published source. It downloaded all five locked inputs on the runner, passed all 54 origin tests, and verified the signed APK. The workflow uses current checkout/Python-setup action releases for subsequent runs.
+Actual Android installation, WebView trust dialogs, Cancel/Trust/Forget flows against a private HTTPS server, certificate rotation, trusted same-origin exports, public hosted sign-in, back gestures, keyboard/rotation, and background recovery require a device or emulator. The automated policy tests do not claim those interactions were run.
 
-## Checks requiring a device or separate environment
-
-The following remain deployment checks: actual APK installation/update on Android, live HTTPS connection to the server, sign-in, story/OOC generation, native menu behavior, document-provider uploads/exports, gesture/keyboard/rotation behavior, background/resume, renderer recovery, and the server's per-account permissions.
-
-The portable pipeline is the build path exercised for this extraction. Android Studio/Gradle is documented as an alternative; it is not represented as verified here unless separately exercised.
+The [GitHub verification workflow](https://github.com/haywoodspartan/yumina-oss-android/actions/workflows/android.yml) runs the same build and both test suites on a fresh Windows runner for published changes. Its signing key is disposable and is not a release update key.

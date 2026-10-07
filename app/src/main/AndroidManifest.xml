@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <application android:label="Yumina" android:icon="@mipmap/ic_launcher"
+    <application android:label="Yumina OSS Android" android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round" android:theme="@style/AppTheme" android:allowBackup="false"
         android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true">

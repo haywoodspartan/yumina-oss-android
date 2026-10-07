@@ -16,21 +16,21 @@ flowchart LR
     Native --> Picker[Android document providers]
 ```
 
-The client does not embed the server frontend as a static bundle. It loads the configured origin and therefore receives web UI changes from the server. APK changes are needed only for native code/resources and bundled trust configuration.
+The client does not embed the server frontend as a static bundle. It loads the configured origin and therefore receives web UI changes from the server. APK changes are needed for native code and resources. Custom server certificate choices are saved on the device.
 
 ## Main source files
 
 | File | Responsibility |
 | --- | --- |
-| `app/src/main/java/ai/storywriter/mobile/MainActivity.java` | Activity UI, WebView setup, navigation, options, error recovery, file selection, exports, and lifecycle |
-| `app/src/main/java/ai/storywriter/mobile/ServerAddress.java` | Pure-Java URL validation, origin comparison, Blob origin checks, native options command checks |
+| `app/src/main/java/io/github/haywoodspartan/yumina/android/MainActivity.java` | Activity UI, WebView setup, navigation, options, error recovery, file selection, exports, and lifecycle |
+| `app/src/main/java/io/github/haywoodspartan/yumina/android/ServerAddress.java` | Pure-Java URL validation, origin comparison, Blob origin checks, native options command checks |
 | `app/src/main/AndroidManifest.xml` | Launcher activity, Internet permission, app label/icons, backup policy, resize/configuration behavior |
 | `app/src/main/res/xml/network_security_config.xml` | HTTP allowance and HTTPS trust-anchor sources |
-| `app/src/main/res/raw/story_writer_ca.pem` | Public root CA bundled for the original server deployment |
+| `app/src/main/java/io/github/haywoodspartan/yumina/android/CertificateTrust.java` | HTTPS-origin keys, SHA-256 identity, public-certificate decoding, and scoped download verification |
 | `app/src/main/res/values/styles.xml` | Native Android theme/colors |
 | `tests/ServerAddressTest.java` | Host/port/scheme and origin boundary regressions |
+| `tests/CertificateTrustTest.java` | Real temporary certificates for trust isolation, expiry, identity and download-verifier checks |
 | `build.py` | Portable compilation, signing, verification and output publication |
-| `tools/VerifyCa.java` | Build-time validation of the public CA |
 | `tools/SignApk.java` | Build-time APK signing and signature verification |
 
 The native UI is constructed programmatically. There is no Compose, Flutter, React Native, AndroidX UI stack, bundled local LLM, or native-library dependency in this implementation.
@@ -57,7 +57,7 @@ JavaScript and DOM storage are enabled because the server interface needs them. 
 
 Mixed content is set to `MIXED_CONTENT_NEVER_ALLOW`. Multiple windows and automatic script-opened windows are disabled. Media playback requires a user gesture. Safe Browsing is requested through the platform setting, subject to the installed WebView provider's support.
 
-The user agent adds `YuminaAndroid/1.3.0 StoryWriterAndroid/1.3.0`. The associated server can detect the app and avoid offering redundant APK download links. These identifiers also communicate native compatibility/version information.
+The user agent adds `YuminaAndroid/1.4.0`. The associated server can detect the app and avoid offering redundant APK download links. This identifier also communicates native compatibility/version information.
 
 There is no `addJavascriptInterface` bridge. The limited integration uses navigation checks and native-initiated `evaluateJavascript` calls.
 
@@ -67,7 +67,7 @@ There is no `addJavascriptInterface` bridge. The limited integration uses naviga
 
 `onPageFinished` hides progress, flushes cookies, and marks a successful same-origin page connected. It probes the page's `data-android-app-options` attribute to decide whether to show the legacy native overflow button.
 
-Main-frame network errors and HTTP errors use the native panel. HTTPS errors call `SslErrorHandler.cancel()` and show guidance instead of bypassing verification. A renderer failure destroys and replaces the old WebView, then presents Retry.
+Main-frame network errors and HTTP errors use the native panel. HTTPS errors are cancelled unless the only reported error is an unknown issuer and the valid presented leaf exactly matches a certificate already accepted for this HTTPS origin. A new or changed certificate is cancelled first and shown for fingerprint review; a confirmed choice is saved before a fresh connection. Date, hostname, and other errors cannot be overridden. A renderer failure destroys and replaces the old WebView, then presents Retry.
 
 `replaceWebView` also clears pending upload callbacks and starts a new history. This is used when changing the server, clearing login/cache, and recovering from renderer loss.
 
@@ -89,7 +89,7 @@ The chooser maps accepted extensions/MIME types from the web control and permits
 
 The WebView download listener enters `startDownload`. It refuses exports while disconnected, while another export is in progress, or when the current page is not on the configured origin.
 
-For an ordinary same-origin URL, the client records the URL and current cookie header before opening an `ACTION_CREATE_DOCUMENT` picker. A single-thread executor writes into the chosen destination. HTTP redirects are followed manually and each next URL is origin-checked before cookies are sent. Connect/read timeouts are 15/30 seconds; the loop permits up to six request attempts.
+For an ordinary same-origin URL, the client records the URL and current cookie header before opening an `ACTION_CREATE_DOCUMENT` picker. A single-thread executor writes into the chosen destination. HTTP redirects are followed manually and each next URL is origin-checked before cookies are sent. HTTPS downloads use the normal platform trust manager with a fallback for the exact valid leaf accepted for that origin. The default hostname verifier remains enabled. Connect/read timeouts are 15/30 seconds; the loop permits up to six request attempts.
 
 For a same-origin Blob URL, native-initiated JavaScript fetches the Blob from the current page, checks the 10 MiB limit, and uses FileReader to produce a data URL. Native code polls the temporary page object at 100 ms intervals, with a bounded retry count and navigation checks. It decodes the bytes and then opens the save picker. If an HTML anchor supplies a `download` filename, the client preserves it.
 
@@ -99,7 +99,7 @@ Filename separators and line breaks are replaced before opening the picker. Writ
 
 On pause, cookies are flushed and WebView is paused. On resume, WebView resumes. On destroy, callbacks are removed, pending chooser callbacks are cancelled, the WebView is destroyed, and the transfer executor is shut down.
 
-Back handling asks the compatible page's `window.storyWriterAndroidBack()` hook to process the action first. If the hook is absent or does not return JavaScript boolean `true`, the client uses WebView history or finishes the activity. The asynchronous result must match the current navigation counter.
+Back handling asks the compatible page's `window.yuminaAndroidBack()` hook to process the action first. If the hook is absent or does not return JavaScript boolean `true`, the client uses WebView history or finishes the activity. The asynchronous result must match the current navigation counter.
 
 Activity restoration is best-effort. It is not an offline copy of the conversation, and the native client provides no inference foreground service or notification service. Resuming server generation is a responsibility of the compatible server UI.
 

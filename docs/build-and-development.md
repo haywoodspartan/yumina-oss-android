@@ -4,9 +4,9 @@
 
 ## Supported build paths
 
-The portable Python builder is the verified build path for Windows x64. It needs Python 3.10+ and network access for the first download of pinned inputs. The script uses Python's standard library and does not require the original project's Python dependencies.
+The portable Python builder is the verified build path for Windows x64. It needs Python 3.10+ and network access for the first download of pinned inputs. The script uses Python's standard library.
 
-The Gradle project supports conventional Android Studio development with Android SDK 36. It is a separate build path and does not include a checked-in Gradle wrapper. The extraction verification record documents which path was actually exercised.
+The Gradle project supports conventional Android Studio development with Android SDK 36. It is a separate build path and does not include a checked-in Gradle wrapper. The verification record documents which path was actually exercised.
 
 ## Standalone checkout
 
@@ -32,14 +32,8 @@ The compiled application still needs a running compatible server when installed.
 | `data/android-signing/password.txt` | Password used by the build helper | Ignored; back up privately |
 | `downloads/yumina-android.apk` | Verified distributable signed APK | Ignored |
 | `downloads/yumina-android.sha256` | APK checksum | Ignored |
-| `app/src/main/res/raw/story_writer_ca.pem` | Bundled public root CA | Tracked |
 
-The builder recognizes the original parent workspace only when both `start.py` and `web/package.json` exist in its parent directory. In that layout it uses the parent `data/` and `downloads/`, preserving the existing release identity and server distribution location.
-
-```powershell
-# From the original Story Writer AI project root:
-python android/build.py
-```
+The builder always uses the Android checkout as its default root. It does not inspect a parent project's launchers or server folders. Use the explicit overrides below to share a public tool cache or select a private signing/output location.
 
 ## Explicit locations
 
@@ -47,14 +41,14 @@ Two optional environment variables override the defaults:
 
 | Variable | Meaning |
 | --- | --- |
-| `STORY_WRITER_ANDROID_DATA_DIR` | Base directory containing `android-toolchain/` and `android-signing/` |
-| `STORY_WRITER_ANDROID_OUTPUT_DIR` | Public output directory for the final APK and checksum |
+| `YUMINA_ANDROID_DATA_DIR` | Base directory containing `android-toolchain/` and `android-signing/` |
+| `YUMINA_ANDROID_OUTPUT_DIR` | Public output directory for the final APK and checksum |
 
 Use absolute paths to make the intended location clear. Relative overrides resolve against the process working directory. The overrides are local process settings, not files automatically read from a `.env`.
 
 ```powershell
-$env:STORY_WRITER_ANDROID_DATA_DIR = 'D:\PrivateBuilds\story-writer-data'
-$env:STORY_WRITER_ANDROID_OUTPUT_DIR = 'D:\PublicDownloads\story-writer'
+$env:YUMINA_ANDROID_DATA_DIR = 'D:\PrivateBuilds\yumina-android-data'
+$env:YUMINA_ANDROID_OUTPUT_DIR = 'D:\PublicDownloads\yumina-android'
 python build.py
 ```
 
@@ -82,28 +76,26 @@ The first run needs substantial download space for framework resources and the J
 
 1. Reject a non-Windows host for the pinned portable pipeline.
 2. Download/check all locked inputs and extract the JDK/AAPT2 when missing.
-3. Clear known compiled class and DEX outputs for the build.
-4. Read the bundled PEM and refuse private-key content or anything other than exactly one public certificate block.
-5. Compile/run `VerifyCa`, checking validity, root CA properties, signing usage, and self-signature.
-6. Compile/link Android resources, setting package ID, SDK levels, and version metadata.
-7. Compile application Java and generated resource classes for Java 8 compatibility.
-8. Compile/run `ServerAddressTest` without an emulator.
-9. Package classes and run D8 to create DEX.
-10. Assemble an uncompressed, four-byte-aligned APK and verify alignment.
-11. Load the existing private signing identity or generate a new one.
-12. Sign and verify APK v2/v3 schemes.
-13. Verify alignment again, the bundled CA bytes, manifest package/activity/SDK values, and the exact Internet-only permission set.
-14. Publish the final APK through a temporary file replacement, then write its SHA-256 companion.
+3. Clear known compiled classes, DEX and generated R classes so a namespace change cannot carry stale resource classes into the new APK.
+4. Compile/link Android resources with the Yumina package ID, SDK levels, and version metadata.
+5. Compile application Java and generated resource classes for Java 8 compatibility.
+6. Compile/run the address and certificate-trust test suites. Certificate fixtures are generated temporarily by the test and removed afterwards.
+7. Package classes and run D8 to create DEX.
+8. Assemble an uncompressed, four-byte-aligned APK and verify alignment.
+9. Load the checkout's private signing identity or generate a new one.
+10. Sign and verify APK v2/v3 schemes.
+11. Verify alignment again, manifest package/activity/version/SDK values, and the exact Internet-only permission set.
+12. Publish the APK through a temporary file replacement, then write its SHA-256 companion.
 
-The current checksum file is named `yumina-android.sha256` and contains the digest followed by `yumina-android.apk`. Intermediate output also retains `build/story-writer-android.apk` for historical naming compatibility.
+The current checksum file is named `yumina-android.sha256` and contains the digest followed by `yumina-android.apk`. The signed intermediate output is `build/yumina-android.apk`.
 
 ## Signing identity
 
-The build uses a PKCS#12 keystore with alias `story-writer`. New identities use RSA 3072-bit keys. The signing password is generated into the ignored password file and passed to Java through the `STORY_WRITER_SIGNING_PASSWORD` process environment.
+The build uses a PKCS#12 keystore with alias `yumina-android`. New identities use RSA 3072-bit keys. The signing password is generated into the ignored password file and passed to Java through the `YUMINA_ANDROID_SIGNING_PASSWORD` process environment.
 
 If an existing keystore has no password file, the build stops and asks for the private backup. It does not discard the key and silently replace it.
 
-The public HTTPS CA and private APK signing key serve different purposes. The CA lets the app verify your server. The APK key lets Android recognize updates from the same publisher. They must not be substituted for each other.
+Saved server certificates and the private APK signing key serve different purposes. The former authorize a specific private HTTPS endpoint after user review; the latter lets Android recognize updates from the same publisher. Server trust choices are made on the phone and are not build inputs.
 
 ## Android Studio and Gradle
 
@@ -123,11 +115,12 @@ With a JDK on PATH, these commands run the address/origin checks without Android
 
 ```powershell
 New-Item -ItemType Directory -Path build/address-tests -Force | Out-Null
-javac -encoding UTF-8 --release 8 -d build/address-tests app/src/main/java/ai/storywriter/mobile/ServerAddress.java tests/ServerAddressTest.java
-java -cp build/address-tests ai.storywriter.mobile.ServerAddressTest
+javac -encoding UTF-8 --release 8 -d build/address-tests app/src/main/java/io/github/haywoodspartan/yumina/android/ServerAddress.java app/src/main/java/io/github/haywoodspartan/yumina/android/CertificateTrust.java tests/ServerAddressTest.java tests/CertificateTrustTest.java
+java -cp build/address-tests io.github.haywoodspartan.yumina.android.ServerAddressTest
+java -cp build/address-tests io.github.haywoodspartan.yumina.android.CertificateTrustTest
 ```
 
-The harness covers allowed LAN addresses, scheme/host case, effective ports, rejected origin confusion, credentials/paths/queries, Blob boundaries, and the native App options command conditions.
+The address harness covers allowed LAN addresses, scheme/host case, effective ports, rejected origin confusion, credentials/paths/queries, Blob boundaries, and native App options command conditions. The certificate harness uses temporary real X.509 fixtures to check origin isolation, exact fingerprints, changed certificates, expiry, future validity, persistence decoding, and download trust. Neither suite requires an emulator.
 
 ## Icons and optional Pillow
 

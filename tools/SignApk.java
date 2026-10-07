@@ -11,12 +11,12 @@ import java.util.Collections;
 public final class SignApk {
     public static void main(String[] args) throws Exception {
         if (args.length != 3) throw new IllegalArgumentException("keystore input.apk output.apk");
-        char[] password = System.getenv("STORY_WRITER_SIGNING_PASSWORD").toCharArray();
+        char[] password = System.getenv("YUMINA_ANDROID_SIGNING_PASSWORD").toCharArray();
         KeyStore store = KeyStore.getInstance("PKCS12");
         try (FileInputStream input = new FileInputStream(args[0])) { store.load(input, password); }
-        PrivateKey key = (PrivateKey) store.getKey("story-writer", password);
-        X509Certificate certificate = (X509Certificate) store.getCertificate("story-writer");
-        ApkSigner.SignerConfig config = new ApkSigner.SignerConfig.Builder("story-writer", key, Collections.singletonList(certificate)).build();
+        PrivateKey key = (PrivateKey) store.getKey("yumina-android", password);
+        X509Certificate certificate = (X509Certificate) store.getCertificate("yumina-android");
+        ApkSigner.SignerConfig config = new ApkSigner.SignerConfig.Builder("yumina-android", key, Collections.singletonList(certificate)).build();
         new ApkSigner.Builder(Collections.singletonList(config)).setInputApk(new File(args[1])).setOutputApk(new File(args[2]))
                 .setMinSdkVersion(26).setV1SigningEnabled(false).setV2SigningEnabled(true).setV3SigningEnabled(true).setV4SigningEnabled(false).build().sign();
         ApkVerifier.Result result = new ApkVerifier.Builder(new File(args[2])).setMinCheckedPlatformVersion(26).build().verify();

@@ -27,5 +27,4 @@ Thumbs.db
 *.pfx
 *.key
 *.pem
-!app/src/main/res/raw/story_writer_ca.pem
 password.txt

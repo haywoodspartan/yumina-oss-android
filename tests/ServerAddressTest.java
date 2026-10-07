@@ -1,4 +1,4 @@
-package ai.storywriter.mobile;
+package io.github.haywoodspartan.yumina.android;
 
 public final class ServerAddressTest {
     private static int checks;

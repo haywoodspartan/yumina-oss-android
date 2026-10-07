@@ -4,25 +4,27 @@
 
 ## Separate deployment
 
-The Android client works with the native [Yumina.io](https://yumina.io) hosted service or a custom self-hosted version of Yumina at a user-selected origin. Enter `https://yumina.io` for the official service, or the HTTP(S) origin of your own installation. It does not start that application or include its database. The original associated custom project runs a Yumina-based Story Writer server, generally behind Caddy HTTPS on a PC.
+The Android client works with the native [Yumina.io](https://yumina.io) hosted service or a custom self-hosted version of Yumina at a user-selected origin. Enter `https://yumina.io` for the official service, or the HTTP(S) origin of your own installation. It does not start that application or include its database. Custom installations can expose their application through a reverse proxy on private infrastructure.
 
 A plain browser-compatible UI can load without implementing the optional native integrations. The integrated App options links, Android-specific menu behavior, and conversation reconnect behavior depend on the server frontend.
 
 ## Network access
 
-Native Yumina.io requires Internet access and does not require the user to run a PC server. A custom self-hosted installation must be reachable through LAN, routed private network, VPN, or an appropriately deployed HTTPS address. A loopback-only backend cannot be accessed directly from another device. In the original setup, Caddy accepts connections on the PC and proxies them to the loopback application port.
+Native Yumina.io requires Internet access and does not require the user to run a PC server. A custom self-hosted installation must be reachable through LAN, routed private network, VPN, or an appropriately deployed HTTPS address. A loopback-only backend cannot be accessed directly from another device. For example, a reverse proxy can accept connections on the host and forward them to a loopback application port.
 
 Firewall rules, DNS, VPN routing, router settings, server process supervision, and model-provider connectivity belong to the server deployment. The APK cannot fix them. It has no server discovery or port-forwarding feature.
 
 The configured value is an origin, such as `https://192.168.1.20`, rather than a deep link. The server can navigate to its own application routes after loading. Paths and embedded credentials are rejected by the native address dialog.
 
-## TLS and the existing public root
+## TLS and custom certificates
 
-The current APK has the original deployment's public Caddy root CA in `app/src/main/res/raw/story_writer_ca.pem`. The app can validate certificates issued by that CA without a device-wide CA installation when the hostname and chain are valid.
+No CA certificates are bundled in this APK. Standard HTTPS uses Android's system and user trust sources. For a self-signed certificate or a certificate issued by a private CA, the client can save a user-approved exception for the exact presented leaf certificate and configured HTTPS origin.
 
-A separately deployed server may use a publicly trusted certificate, a user-installed CA, or its own private CA. For a new private CA, replace the bundled public root and rebuild, or install the intended CA into Android's user trust store according to the deployment's policy. Do not turn off certificate validation.
+The app cancels an unknown-issuer connection first and displays its fingerprint, subject, issuer and validity dates. After the user chooses **Trust certificate**, a new connection can proceed only when the certificate matches the saved value and has no date or hostname error. That choice also applies to same-origin HTTPS file exports. It does not authorize other certificates signed by the same CA.
 
-Changing the hostname or IP may require the server certificate to cover the new value. Keeping the same root does not make a mismatched host valid.
+The administrator should supply the server certificate's SHA-256 fingerprint through a separate trusted channel. Use a certificate whose subject alternative names cover the hostname or IP that clients actually enter. A renewed or replaced private certificate requires a new explicit decision in the app. **App options → Server certificate → Forget certificate** removes the saved exception and clears cached WebView SSL decisions.
+
+The app's trust choice does not install a CA on Android or change an external browser. See [Custom server certificates](custom-server-certificates.md) for the user flow and deployment guidance.
 
 ## Native App options contract
 
@@ -49,19 +51,19 @@ To invoke the options menu, the navigation request must be a main-frame request 
 The user agent includes:
 
 ```text
-YuminaAndroid/1.3.0 StoryWriterAndroid/1.3.0
+YuminaAndroid/1.4.0
 ```
 
-The associated server uses these identifiers to offer native options and suppress redundant APK download links inside the app. Keep native version text consistent when releasing a new APK.
+The associated server uses these identifiers to offer native options and suppress redundant APK download links inside the app. Keep native version text consistent when releasing a new APK. Custom frontends should expose the `yuminaAndroidBack` hook if they want to intercept Android back; otherwise the native client uses WebView history or exits.
 
 User-agent detection is suitable for UI adaptation. It is not authentication: arbitrary clients can supply the same string.
 
 ## Back-navigation contract
 
-A compatible page may provide a function named `window.storyWriterAndroidBack`. It should synchronously return boolean `true` when it handled a back action, for example by closing a menu. Return false when native history/exit behavior should proceed.
+A compatible page may provide a function named `window.yuminaAndroidBack`. It should synchronously return boolean `true` when it handled a back action, for example by closing a menu. Return false when native history/exit behavior should proceed.
 
 ```javascript
-window.storyWriterAndroidBack = function () {
+window.yuminaAndroidBack = function () {
   if (closeCurrentOverlay()) return true;
   return false;
 };
@@ -90,7 +92,7 @@ For page-generated exports, same-origin Blob URLs are supported up to 10 MiB. An
 
 ## Host the APK and checksum
 
-The original compatible server exposes `/app/android` as the installation page and reads `/downloads/*` files from its configured downloads directory. The client repository does not contain that route handler.
+A custom server may expose `/app/android` as an installation page and read `/downloads/*` files from a configured downloads directory. The client repository does not contain that route handler.
 
 The portable build produces:
 
@@ -99,9 +101,9 @@ yumina-android.apk
 yumina-android.sha256
 ```
 
-Place those final files in the server's public downloads location, or configure the build's `STORY_WRITER_ANDROID_OUTPUT_DIR` to publish there. The original server's `YUMINA_DOWNLOADS_DIR` setting selects the directory it serves. Never point public download hosting at the private `data/android-signing` directory.
+Place those final files in the server's public downloads location, or configure the build's `YUMINA_ANDROID_OUTPUT_DIR` to publish there. Configure your server's download route to serve that directory. Never point public download hosting at the private `data/android-signing` directory.
 
-If you also offer a public CA download for browser users, distribute only the public certificate and a verified fingerprint. Installing the APK's bundled CA and manually installing a device-wide user CA are different actions.
+If you offer a public CA download for browser users, distribute only the public certificate and a verified fingerprint. This is independent of the Android client's per-server certificate choices.
 
 ## Compatibility limits
 

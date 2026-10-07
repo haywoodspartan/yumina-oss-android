@@ -4,98 +4,94 @@
 
 ## Trust model
 
-The user chooses the server origin. The app displays and executes the web UI delivered by that server, so the server must be trusted by the user. Origin checks restrict native navigation and authenticated exports; they do not make an untrusted server's own scripts or content trustworthy.
+The user chooses the Yumina service origin. The app displays and executes the web UI delivered by that service, so the selected service must be trusted. Origin checks restrict native navigation and authenticated exports; they do not make an untrusted server's scripts or content trustworthy.
 
-There are three distinct identities:
+Three separate identities are involved:
 
 | Identity | Purpose |
 | --- | --- |
-| Server account/session | Authenticates a player or administrator to the remote application |
-| HTTPS certificate chain | Verifies the server connection and its requested hostname |
+| Server account/session | Authenticates a player or administrator to the selected service |
+| HTTPS server certificate | Authenticates the network endpoint, using normal trust or a narrowly scoped saved exception |
 | APK signing certificate | Lets Android recognize the app publisher and compatible updates |
 
-The client holds login cookies in WebView storage. Server records and model credentials remain subject to the server's configuration and policies. Private APK signing material exists only on build machines and is not packaged.
+The client holds login cookies in WebView storage. Server records and model credentials remain subject to that service's policies. APK signing material exists on the build machine and is not packaged.
 
-## Requested Android permission
+## Android permissions
 
-The application declares only `android.permission.INTERNET`. The portable build checks the compiled APK and refuses a different permission set. There are no manifest requests for microphone, camera, contacts, location, notifications, or broad storage access.
+The manifest declares only `android.permission.INTERNET`. The portable build checks the compiled APK and refuses a different permission set. It does not request microphone, camera, contacts, location, notifications, or broad storage permissions.
 
-Document uploads and exports use Android's user-mediated document picker. The user's explicit document selection gives the app access to that selected resource. Permission to select a document is not equivalent to scanning the device's entire filesystem.
+Uploads and exports use Android's document picker. The user's selection grants access to the selected document rather than unrestricted filesystem access. A voice or camera control shown by a server page does not establish native support for that feature; the client has no corresponding permission-grant implementation.
 
-The main server UI may expose functionality that is not usable with this native permission set. In particular, a page showing a microphone/voice control does not establish native microphone support: the client has no audio permission or WebView permission-grant implementation for it.
+## Default HTTPS trust
 
-## HTTPS validation
+No CA certificates are bundled in the APK. `network_security_config.xml` trusts Android system CAs and explicitly user-installed CAs through its `base-config`. Android supports declaring these trust sources in its [network security configuration](https://developer.android.com/privacy-and-security/security-config).
 
-`network_security_config.xml` trusts Android system CAs, explicitly user-installed CAs, and the public root bundled as `res/raw/story_writer_ca.pem`. Android's declarative trust configuration supports these app-specific trust anchors; see the [official documentation](https://developer.android.com/privacy-and-security/security-config).
+Ordinary HTTPS continues to use platform verification. Publicly trusted server connections do not need a saved exception. The user-installed CA source is an explicit app setting; it does not mean this APK installs a CA on the phone.
 
-The bundled root is an **additional CA trust anchor**, not an exclusive certificate pin. Connections can also succeed through the configured system/user trust sources. The current configuration applies these sources through `base-config`, rather than limiting the bundled CA to one domain.
+## Custom private server exceptions
 
-The WebView SSL error handler cancels invalid connections. It never calls `proceed()` to bypass a certificate error. A matching root does not excuse an expired certificate, a wrong hostname, or a wrong phone clock.
+For an unknown issuer, the app can save an exact leaf-certificate exception after user review. This supports self-signed certificates and certificates issued by a private CA. It does not trust that CA globally or authorize other certificates signed by it.
 
-The current bundled public root's DER SHA-256 fingerprint is:
+In WebView, the app checks that the error concerns the selected origin, that the primary error is `SSL_UNTRUSTED`, and that no other error flag is present. It decodes the presented certificate and checks its current validity. A previously accepted certificate must match its complete DER SHA-256 fingerprint for that HTTPS origin before the request can proceed.
 
-```text
-AB07B8686CA188793597BFBA0E440DB83C335E272B4DB3F8841BE5750604089E
-```
+A new or changed certificate is cancelled first. The native dialog shows the selected origin, subject, issuer, dates, and fingerprint; a changed certificate also displays the previous fingerprint. Only an explicit **Trust certificate** decision saves it and starts a fresh connection. A stale dialog cannot save trust after the view, origin, or navigation has changed.
 
-Its certificate validity ends June 20, 2036 at 07:31:37 UTC. The public PEM is intentionally tracked. No CA private key is included.
+Hostname mismatches, expired/not-yet-valid certificates, and other validation errors cannot be overridden. This feature intentionally permits a scoped unknown-issuer exception; it is not an unconditional SSL-error bypass.
 
-At build time, `VerifyCa` checks the root's validity period, CA basic constraints, matching subject/issuer, certificate-signing usage when present, and self-signature. The Python builder rejects private-key text and multiple certificate blocks, then verifies that the exact validated public PEM is retained inside the final APK.
+The Android platform's [WebViewClient reference](https://developer.android.com/reference/android/webkit/WebViewClient) describes the SSL-error callback and its decisions. This application's explicit exception policy is implemented in `MainActivity` and `CertificateTrust`; it should be exercised on the intended WebView/device versions.
 
-These checks validate the packaged trust anchor. They do not connect to the live server or prove that its currently served certificate is valid.
+## Certificate storage and revocation
+
+Public certificate DER bytes are stored in private `server_certificates` SharedPreferences. The key normalizes HTTPS scheme/host/default port. Another host or nondefault port uses a separate key. The stored bytes are bounded and decoded as a single X.509 certificate; corrupt or unavailable data is not trusted.
+
+**App options → Server certificate** shows the saved entry for the selected server. **Forget certificate** removes it, clears WebView SSL preferences, replaces the view, and reconnects. Server changes and explicit reconnects also clear cached WebView SSL decisions so app-managed origin checks are reapplied.
+
+Certificates are separate from web login data. Clearing local login/cache does not remove certificate exceptions. Clearing Android application data or uninstalling removes them. They are never exported into the source repository or future APKs.
+
+## HTTPS exports
+
+Normal URL exports remain restricted to the configured origin. Before opening each connection, the downloader checks the URL and applies a scoped TLS factory only for that origin's saved certificate.
+
+The factory delegates to Android's normal trust manager first. If ordinary verification fails, its fallback requires an exact match to the saved leaf certificate and valid dates throughout the presented chain. A changed leaf, missing chain, or expired certificate cannot use that fallback. Client-certificate checks remain delegated and are not authorized by a server pin.
+
+The normal `HttpsURLConnection` hostname verifier remains enabled. No global default socket factory or permissive hostname verifier is installed. Redirects are followed manually and origin-checked before cookies are forwarded.
 
 ## HTTP and mixed content
 
-The application allows cleartext HTTP for trusted local-server configurations. Address normalization accepts HTTP, and an omitted scheme defaults to HTTP. Always include `https://` when encrypted transport is intended.
+HTTP remains allowed for appropriate local/private configurations. An omitted address scheme currently defaults to HTTP; type `https://` explicitly for encrypted transport. HTTP has no certificate to accept, and the Server certificate menu explains that distinction.
 
-HTTP provides no TLS encryption or server authentication. Limit such deployments to an appropriate trusted network. The app does not silently upgrade an HTTP address to HTTPS.
+WebView mixed content is set to `MIXED_CONTENT_NEVER_ALLOW`. Allowing a top-level HTTP origin and refusing insecure resources inside an HTTPS page are separate controls.
 
-For a loaded HTTPS page, WebView mixed content is disabled. The cleartext allowance and mixed-content rule are different settings: one allows an HTTP server origin; the other prevents an HTTPS page from mixing insecure resources through that WebView setting.
+## Navigation and web-to-native controls
 
-## Origin boundaries
+Origin comparison uses scheme, host, and effective port and rejects embedded user-info. Same-origin pages stay in the WebView. External main-frame HTTP(S) and mail links use Android's external applications; unsupported schemes are not handed to a general native intent dispatcher.
 
-`ServerAddress.sameOrigin` compares scheme, host, and effective port. Different schemes or ports represent different origins, even if the host text is the same. User-info is rejected so addresses such as `https://user@server` cannot be treated as an authorized native target.
+The exact `yumina-app://options` command opens native App options only from the configured current page, in the main frame, with a user gesture, and without a redirect. Extra actions, paths, or parameters fail that check.
 
-Same-origin pages stay inside WebView. External main-frame HTTP(S)/email links open Android's external applications. Arbitrary unsupported schemes do not get forwarded through a generic native intent.
+No `addJavascriptInterface` bridge is exposed. Native code initiates limited `evaluateJavascript` calls for the options capability marker, `yuminaAndroidBack` hook, and bounded same-origin Blob exports. Navigation counters prevent old callbacks from controlling a newly loaded page.
 
-Blob export URLs must embed the configured server's origin. Foreign-origin Blobs, `blob:null`, and non-Blob URLs cannot pass the Blob check.
+## Cookies, uploads, and exports
 
-## Limited web-to-native integration
+First-party cookies are enabled; third-party WebView cookies are disabled. Cookies are flushed after page load and when the activity pauses. Native network exports use the configured origin's cookie and do not forward it to an unrelated redirect target.
 
-The client exposes no `addJavascriptInterface`. The exact `yumina-app://options` navigation command can open App options only from the connected origin's main page with a user gesture and without a redirect. Extra parameters, alternate commands, and subframe/scripted navigation fail the checks.
+File access and file-URL escalation are disabled. Explicit `content://` document-provider uploads remain available through the system picker. The native chooser processes up to 200 returned documents and cancels pending callbacks when the renderer is replaced.
 
-Native code initiates a few `evaluateJavascript` probes for the options marker, back-navigation hook, and bounded Blob exports. These calls are tied to the current navigation state. They do not offer web content an unrestricted native command dispatcher.
+Blob exports must originate from the current connected page and remain below 10 MiB. Export filenames have separators/line breaks sanitized. Destination writes run on a worker, and success is reported only after the stream closes. Interrupted writes can leave a partial file in the selected provider.
 
-## Cookies and authenticated downloads
+Only one export can run at a time. Server switching, login clearing, and certificate forgetting are blocked while a save is active. These guards avoid changing the transfer's account or trust context midway through the operation.
 
-First-party WebView cookies are accepted; third-party cookies are disabled for this WebView. Cookies are flushed after page loading and when the activity pauses. Their contents are not committed to the repository or exported as a feature.
+## Local data
 
-For normal URL exports, the app obtains the configured server's cookie header and checks every manually followed redirect before sending it. An export that leaves the origin fails instead of forwarding that cookie to the other server.
+The selected origin lives in private `connection` preferences. WebView holds cookies, cached pages, and web storage. Certificate exceptions live separately as described above. The manifest disables Android app backup.
 
-Browser-created exports are read only from the current connected same-origin page and are capped at 10 MiB. Their temporary page data is removed after retrieval on the normal completion path. Navigation/renderer changes invalidate the associated callback.
+The native application has no independent story/account database or local model runtime. Clearing local web data leaves server content intact. Uninstalling does not delete the selected service's records.
 
-## File and lifecycle boundaries
+## Build secrets
 
-File-URL access and file-URL cross-origin escalation are disabled. Explicit document-provider content access remains enabled for chosen uploads. The client accepts only returned `content://` chooser items and has no broad storage permission.
+`data/android-signing/release.p12` and `password.txt` remain private. The builder passes the password through `YUMINA_ANDROID_SIGNING_PASSWORD` to its signing helper. Data folders, outputs, common certificate/private-key file extensions, and local configuration are ignored by Git.
 
-Export destination names are sanitized for separators and line breaks. Network writes occur on a worker executor. Successful saving is reported only after the destination stream closes; a failed write can leave a partial provider document.
+The APK signing identity is separate from any server certificate accepted on a phone. A new build checkout needs the intended privately backed-up APK key for compatible updates. CI creates a temporary verification key and does not publish it as a production identity.
 
-Changing servers replaces the WebView and cancels a pending upload callback. Native code prevents changing the server or clearing login during an active export. Activity teardown cancels UI callbacks and destroys the renderer.
+## Verification limits
 
-## Local storage and clearing data
-
-The selected server origin lives in private SharedPreferences. Cookies, cached pages, and server web storage live in the app's WebView data area. The manifest disables Android app backup. The native client does not maintain a separate copy of server books, accounts, or the authoritative story database.
-
-**Clear local login and cache** removes WebView cookies across servers, deletes web storage, clears cached pages, and replaces the WebView. It does not delete server content or reset the selected native server address. Uninstalling/clearing application data through Android also removes local connection configuration.
-
-## Build-machine secrets
-
-`data/android-signing/release.p12` and `password.txt` must remain private. The builder passes the password to the signing helper through a process environment variable. The source ignores data folders and common private key/keystore filenames.
-
-The public root CA is the deliberate exception to the PEM ignore rule. Copy only a public root certificate from the server. Do not copy Caddy `root.key`, `intermediate.key`, a TLS private key, release keystores, server `.env` files, or server databases into app resources or public download folders.
-
-CI uses a temporary key of its own. That key is a verification artifact rather than an update identity for users. Production release signing must use the private backed-up original key.
-
-## Scope of verification
-
-Source checks and packaging tests cover implemented boundaries. They are not a full application security audit. Device WebView behavior, server trust, actual TLS endpoints, account permissions, destination providers, and runtime networking need verification in the deployment where the app is used.
+Automated tests use temporary real certificates to verify policy boundaries, persistence decoding, and the download trust manager. Compilation and APK inspection establish that the new classes/resources are packaged correctly. WebView dialogs, actual TLS handshakes on Android, device document providers, and live hosted/self-hosted sign-in remain device/deployment checks.

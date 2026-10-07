@@ -4,21 +4,21 @@
 
 This repository contains the Android application, its resources, connection tests, and build tools. Stories, accounts, memory, model configuration, and AI inference stay with the selected hosted service or self-hosted server; the phone supplies the interface and native device integration. Available features depend on the selected Yumina version and account permissions.
 
-The existing installed app is labelled **Yumina** and keeps package ID **`ai.storywriter.mobile`**. The repository name does not change the installed application's identity. Source extraction preserves the current client behavior, existing public CA, and signing compatibility with the original workspace.
+The app is labelled **Yumina OSS Android**, version **1.4.0** (code **9**), with package ID **`io.github.haywoodspartan.yumina.android`**. This identity installs separately from apps with a different package ID. Sign in to your chosen service to access your existing server-side account and stories.
 
 ## At a glance
 
 | Item | Current implementation |
 | --- | --- |
 | Platform | Android 8.0 and later; minimum API 26 |
-| Current app version | 1.3.0, version code 8 |
+| Current app version | 1.4.0, version code 9 |
 | Compile / target SDK | 36 / 36 |
 | Language | Java, compiled for Java 8 compatibility |
 | UI | Server web interface inside Android WebView, plus native connection and recovery controls |
 | Permission | `android.permission.INTERNET` |
 | Server connection | User-selected HTTP or HTTPS origin |
 | Supported destinations | Native Yumina.io hosted service or a custom self-hosted Yumina installation |
-| HTTPS trust | System CAs, user-installed CAs, and one bundled public server CA |
+| HTTPS trust | System/user CAs, with optional exact-certificate trust for a chosen custom server |
 | Files | Android document picker for uploads and Save file picker for exports |
 | Portable build | Python 3.10+, Windows x64, downloaded and SHA-256-checked JDK/build tools |
 | Alternative development | Android Studio / Android Gradle Plugin 8.13.2 |
@@ -28,7 +28,8 @@ The existing installed app is labelled **Yumina** and keeps package ID **`ai.sto
 
 - Remembers the chosen server address between launches.
 - Opens that server's web UI without an extra permanent address toolbar.
-- Offers native **App options**: change server, reload, open in browser, clear local login/cache, and view help.
+- Offers native **App options**: change server, reload, open in browser, clear local login/cache, inspect or forget a trusted server certificate, and view help.
+- Lets you accept a self-signed certificate or one issued by a private CA after reviewing its SHA-256 fingerprint. The saved choice is restricted to that certificate and HTTPS origin; no CA certificates ship in the app.
 - Gives a usable recovery screen when the server is offline, returns an HTTP error, fails certificate checks, takes too long to load, or loses its WebView renderer.
 - Integrates EPUB and image uploads with Android's document picker without broad storage access.
 - Saves server downloads and supported browser-generated exports through Android's Save file dialog.
@@ -53,7 +54,7 @@ The APK does not contain an AI model, an independent story database, a server la
 
 ## Install and connect
 
-1. Obtain the signed APK from this app's maintainer or your server administrator. Custom deployments based on the original Story Writer server can also provide it at `https://YOUR-SERVER/app/android`; that download route is not required of the official Yumina.io service.
+1. Obtain the signed APK from this app's maintainer or your server administrator. Custom deployments can also provide it at `https://YOUR-SERVER/app/android`; that download route is not required of the official Yumina.io service.
 2. Download the signed APK and allow installation from that browser or file source when Android requests it.
 3. Install and launch the app.
 4. Enter `https://yumina.io` for the native hosted service, or your custom server's origin, for example `https://192.168.1.20` or `https://stories.example.com`.
@@ -85,9 +86,9 @@ downloads/yumina-android.apk   Verified signed APK
 downloads/yumina-android.sha256
 ```
 
-In the original Story Writer workspace, `python android/build.py` continues to use the parent project's `data/` and `downloads/` folders. Both layouts use the same source. Optional `STORY_WRITER_ANDROID_DATA_DIR` and `STORY_WRITER_ANDROID_OUTPUT_DIR` variables select explicit locations. See the [build guide](docs/build-and-development.md) before moving signing material or creating release APKs.
+Each checkout uses its own `data/` and `downloads/` folders. Optional `YUMINA_ANDROID_DATA_DIR` and `YUMINA_ANDROID_OUTPUT_DIR` variables select explicit locations. See the [build guide](docs/build-and-development.md) before moving signing material or creating release APKs.
 
-The build compiles resources and Java, runs the connection boundary tests, produces DEX, checks ZIP alignment, signs with APK signature schemes v2/v3, verifies signatures and manifest properties, and confirms the correct public CA is packaged before publishing the output files. A successful build does not establish that every device interaction works; use the [device test checklist](docs/releasing-and-testing.md#device-smoke-test).
+The build compiles resources and Java, runs the connection boundary tests, produces DEX, checks ZIP alignment, signs with APK signature schemes v2/v3, verifies signatures and manifest properties, and tests per-server certificate trust before publishing the output files. A successful build does not establish that every device interaction works; use the [device test checklist](docs/releasing-and-testing.md#device-smoke-test).
 
 ## Documentation
 
@@ -97,7 +98,8 @@ The detailed documentation explains both user-facing behavior and the source imp
 | --- | --- |
 | [User guide](docs/user-guide.md) | Installation, connection, login, menus, files, back navigation, backgrounding, and device behavior |
 | [Architecture](docs/architecture.md) | Native/server responsibilities, WebView setup, lifecycle, connection state, upload/export flows, and source map |
-| [Build and development](docs/build-and-development.md) | Standalone setup, original workspace compatibility, paths, toolchain, signing, Android Studio, icons, and CI |
+| [Build and development](docs/build-and-development.md) | Standalone setup, paths, toolchain, signing, Android Studio, icons, and CI |
+| [Custom server certificates](docs/custom-server-certificates.md) | Accepting an unknown issuer, fingerprint review, saved trust, certificate changes, and removal |
 | [Security and privacy](docs/security-and-privacy.md) | Trust anchors, origin checks, cookie handling, file access, permissions, local data, and private build material |
 | [Server integration](docs/server-integration.md) | Network setup, download hosting, native App options contract, back-navigation hook, and compatibility |
 | [Releasing and testing](docs/releasing-and-testing.md) | Version updates, signing identity, automated checks, device matrix, distribution, CA rotation, and recovery |
@@ -112,10 +114,11 @@ app/
   build.gradle
   src/main/
     AndroidManifest.xml
-    java/ai/storywriter/mobile/
+    java/io/github/haywoodspartan/yumina/android/
       MainActivity.java
       ServerAddress.java
-    res/                       Icons, native styles, options artwork, public CA and trust config
+      CertificateTrust.java
+    res/                       Icons, native styles, options artwork and network trust config
 docs/                          Detailed client documentation
 tests/ServerAddressTest.java    Pure-Java address and origin boundary checks
 tools/
@@ -127,12 +130,12 @@ build.gradle                   Android Gradle Plugin declaration
 settings.gradle                Gradle repository and module configuration
 ```
 
-Generated files, downloaded tools, APK outputs, local IDE settings, and private signing material are excluded from Git. This repository does not include the server source, story collections, account databases, model weights, or the original workspace's `.env` files.
+Generated files, downloaded tools, APK outputs, local IDE settings, and private signing material are excluded from Git. This repository does not include the server source, story collections, account databases, model weights, or server `.env` files.
 
-## Project origin and artwork
+## Yumina and artwork
 
-The Android shell was extracted from the Story Writer AI workspace, whose active server is based on [Yumina](https://github.com/lovetimo0421/yumina-oss). It is maintained here as a separate Android client repository.
+Yumina OSS Android is a separate Android client for [Yumina](https://github.com/lovetimo0421/yumina-oss), including the official hosted service and compatible custom installations.
 
-The existing Yumina logo, generated launcher artwork, and installed display name are preserved from that workspace. Upstream code licensing and trademark notices are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [third-party/yumina/](third-party/yumina/). The repository's Android source has not been given a new blanket license grant as part of this extraction.
+The Yumina logo and generated launcher artwork retain their upstream notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [third-party/yumina/](third-party/yumina/). These notices do not add a blanket license grant for the Android shell source.
 
-Implementation and version details in these guides describe the source inspected on **October 6, 2026**. The guides distinguish implemented behavior from future possibilities and from checks that require a real device.
+Implementation and version details in these guides describe the current **1.4.0** source. The guides distinguish implemented behavior from future possibilities and from checks that require a real device.

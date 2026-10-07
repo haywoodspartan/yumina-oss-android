@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- HTTPS verifies both the certificate chain and host. This public Caddy
-         root is trusted only by this app; its private key is never packaged. -->
+    <!-- HTTPS verifies certificate chains and hostnames using the device's
+         system CAs and explicitly installed user CAs. -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
-            <certificates src="@raw/story_writer_ca" />
         </trust-anchors>
     </base-config>
 </network-security-config>

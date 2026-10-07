@@ -6,7 +6,7 @@
 
 Use **App options → Server address** and check the actual address/port. Confirm the server is running. Test its address in the phone browser and from another device on the same network. Check Wi-Fi/VPN connectivity, routing, and server firewall settings.
 
-Do not use `localhost`, a loopback address, or `0.0.0.0`. A backend listening only on `127.0.0.1` needs the original project's reachable reverse proxy or another appropriate deployment. The native client does not launch the PC's server.
+Do not use `localhost`, a loopback address, or `0.0.0.0`. A backend listening only on `127.0.0.1` needs a reachable reverse proxy or another appropriate deployment. The native client does not launch the PC's server.
 
 A change in DHCP-assigned PC address can make an old saved origin stop working. Update the address to the one the phone can reach. A private VPN may use a different reachable address from Wi-Fi.
 
@@ -26,9 +26,9 @@ API-level failures inside a loaded web UI are handled by that server UI. The nat
 
 Check the phone's date/time, the exact server hostname/IP, and the certificate served by that endpoint. Verify that the chain is valid for that origin and leads to a configured trust anchor.
 
-The bundled root belongs to the original server deployment. A new server CA needs an appropriate new trust anchor, a user-installed CA, or a publicly trusted server certificate. If the original Caddy CA was regenerated, rebuild/install an updated client with the new public root.
+No CA certificates are bundled. An unknown private issuer can be accepted through the app's **Trust certificate** dialog after fingerprint review. You can also use an appropriately installed user CA or a publicly trusted server certificate. Renewal of an explicitly accepted private certificate requires a new trust decision.
 
-The app intentionally cancels invalid TLS connections. A certificate error cannot be solved by a menu option that bypasses validation. A root fingerprint is different from the APK signing certificate fingerprint.
+The app allows only an unknown-issuer exception for a certificate valid for the requested host and current time. It cannot accept date, hostname, or other validation errors. Inspect or remove a saved exception under **App options → Server certificate**. Server-certificate fingerprints and APK signing fingerprints identify different certificates.
 
 ## App options cannot be found
 
@@ -38,7 +38,7 @@ If a custom frontend sets `data-android-app-options="1"` but provides no usable 
 
 ## New APK will not install over the old app
 
-Check package ID, version code, and signing certificate. A fresh standalone build generates a new signing key if none was restored, so it will not replace an app signed by the original private key. Restore `release.p12` and `password.txt` to the intended signing directory and build again.
+Check package ID, version code, and signing certificate. Version 1.4.0 uses `io.github.haywoodspartan.yumina.android` and installs separately from apps with another package ID. A fresh standalone build generates a new signing key if none was restored, so it will not replace an app signed by the original private key. Restore `release.p12` and `password.txt` to the intended signing directory and build again.
 
 An Android Studio debug build also has a different identity. A lower version code can be rejected as a downgrade. Uninstalling permits a new identity but removes local login/address state; it does not delete the remote server's stories. Choose that only when the local reset is acceptable.
 
@@ -90,7 +90,7 @@ The pinned portable toolchain is Windows x64. Use the conventional Android Studi
 
 An existing `release.p12` was found without its paired `password.txt`. Restore the original password backup in that signing directory. The builder does not replace an existing key because it cannot open it.
 
-If using `STORY_WRITER_ANDROID_DATA_DIR`, inspect that location rather than the default one. The override selects both cache and signing directories.
+If using `YUMINA_ANDROID_DATA_DIR`, inspect that location rather than the default one. The override selects both cache and signing directories.
 
 ## Useful bug-report details
 

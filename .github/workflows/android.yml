@@ -21,6 +21,6 @@ jobs:
       - name: Compile, test, and verify a disposable signed APK
         shell: pwsh
         env:
-          STORY_WRITER_ANDROID_DATA_DIR: ${{ runner.temp }}/story-writer-android-data
-          STORY_WRITER_ANDROID_OUTPUT_DIR: ${{ runner.temp }}/story-writer-android-downloads
+          YUMINA_ANDROID_DATA_DIR: ${{ runner.temp }}/yumina-android-data
+          YUMINA_ANDROID_OUTPUT_DIR: ${{ runner.temp }}/yumina-android-downloads
         run: python build.py
