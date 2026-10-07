@@ -1,0 +1,26 @@
+name: Android verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile, test, and verify a disposable signed APK
+        shell: pwsh
+        env:
+          STORY_WRITER_ANDROID_DATA_DIR: ${{ runner.temp }}/story-writer-android-data
+          STORY_WRITER_ANDROID_OUTPUT_DIR: ${{ runner.temp }}/story-writer-android-downloads
+        run: python build.py

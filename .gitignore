@@ -1,0 +1,31 @@
+# Generated builds and dependency caches
+/.gradle/
+/.kotlin/
+/build/
+/app/build/
+/data/
+/downloads/
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local Android Studio configuration
+local.properties
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Credentials and private signing material
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+*.pem
+!app/src/main/res/raw/story_writer_ca.pem
+password.txt

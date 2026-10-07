@@ -1,0 +1,22 @@
+{
+  "android.jar": {
+    "url": "https://repo.maven.apache.org/maven2/org/robolectric/android-all/16-robolectric-13921718/android-all-16-robolectric-13921718.jar",
+    "sha256": "8b74a0a137330658d2f33f0dc715d42734f74ba8b2d7014fc2e95aa40d3f682d"
+  },
+  "aapt2.jar": {
+    "url": "https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/9.4.1-15978811/aapt2-9.4.1-15978811-windows.jar",
+    "sha256": "5fe3c8ee5c6b3f47efd1fced1d6418084037f54f13290816c5db717e6b5c92aa"
+  },
+  "r8.jar": {
+    "url": "https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.4.26/r8-9.4.26.jar",
+    "sha256": "870354f719912241712d6773bfd7c66b1138b790a1ee547dc4726c6ddcf2c332"
+  },
+  "apksig.jar": {
+    "url": "https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/9.4.1/apksig-9.4.1.jar",
+    "sha256": "7ae2e5980c77d853e3513074ee7c822bbdcdcde1668889d17faa7fe8bc8aa821"
+  },
+  "jdk21.zip": {
+    "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1.zip",
+    "sha256": "f9d6e191ab098c0d416e7d588a24420a8621cd2f4720dab2459b8b7b2d2d8b4e"
+  }
+}
