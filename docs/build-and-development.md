@@ -11,8 +11,8 @@ The Gradle project supports conventional Android Studio development with Android
 ## Standalone checkout
 
 ```powershell
-git clone https://github.com/haywoodspartan/story-writer-android.git
-cd story-writer-android
+git clone https://github.com/haywoodspartan/yumina-oss-android.git
+cd yumina-oss-android
 python build.py
 ```
 

@@ -68,8 +68,8 @@ Existing installations can be updated in place when the new APK has the same pac
 The verified portable path is Windows x64 with Python 3.10 or later:
 
 ```powershell
-git clone https://github.com/haywoodspartan/story-writer-android.git
-cd story-writer-android
+git clone https://github.com/haywoodspartan/yumina-oss-android.git
+cd yumina-oss-android
 python build.py
 ```
 

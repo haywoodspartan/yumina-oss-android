@@ -6,7 +6,7 @@
 
 | Property | Value |
 | --- | --- |
-| Repository | `haywoodspartan/story-writer-android` |
+| Repository | `haywoodspartan/yumina-oss-android` |
 | Supported service choices | Native Yumina.io or a custom self-hosted version of Yumina |
 | Current installed label | `Yumina` |
 | Application ID / namespace | `ai.storywriter.mobile` |

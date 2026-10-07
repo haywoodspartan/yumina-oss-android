@@ -37,7 +37,7 @@ The optional icon test used the existing developer Python environment with Pillo
 
 The JDK reported Java 8 compatibility/deprecated-API compiler warnings; they did not prevent compilation or verification. No blanket warning-free build claim is made.
 
-The first [GitHub Windows verification run](https://github.com/haywoodspartan/story-writer-android/actions/runs/37568134512) completed successfully from the published source. It downloaded all five locked inputs on the runner, passed all 54 origin tests, and verified the signed APK. The workflow uses current checkout/Python-setup action releases for subsequent runs.
+The first [GitHub Windows verification run](https://github.com/haywoodspartan/yumina-oss-android/actions/runs/37568134512) completed successfully from the published source. It downloaded all five locked inputs on the runner, passed all 54 origin tests, and verified the signed APK. The workflow uses current checkout/Python-setup action releases for subsequent runs.
 
 ## Checks requiring a device or separate environment
 
