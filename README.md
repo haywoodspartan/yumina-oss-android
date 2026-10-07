@@ -1,4 +1,4 @@
-# Story Writer Android
+# Yumina OSS Android
 
 **An Android client that works with the native [Yumina.io](https://yumina.io) service or a custom self-hosted version of Yumina, built with Java and Android WebView.** Use the official hosted service or connect to your own Yumina-based server to access its worlds, stories, chat, and account tools in an installable Android app.
 
