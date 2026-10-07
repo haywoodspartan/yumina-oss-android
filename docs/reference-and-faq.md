@@ -7,6 +7,7 @@
 | Property | Value |
 | --- | --- |
 | Repository | `haywoodspartan/story-writer-android` |
+| Supported service choices | Native Yumina.io or a custom self-hosted version of Yumina |
 | Current installed label | `Yumina` |
 | Application ID / namespace | `ai.storywriter.mobile` |
 | Launcher activity | `ai.storywriter.mobile.MainActivity` |
@@ -84,7 +85,11 @@ Only to the extent supported by the server's mobile UI, Android WebView, and thi
 
 ## Can I connect to a different server?
 
-The app accepts valid user-selected HTTP(S) origins and retains same-origin boundaries. The other server must offer a compatible web UI and valid transport trust. The bundled CA belongs to the original deployment; it is not a universal CA for other private servers.
+Yes. It works with the native Yumina.io service at `https://yumina.io` or a custom self-hosted version of Yumina. The app accepts valid user-selected HTTP(S) origins and retains same-origin boundaries. The selected server must offer a compatible web UI and valid transport trust. The bundled CA belongs to the original deployment; it is not a universal CA for other private servers.
+
+## Do I need to run a PC server to use native Yumina.io?
+
+No. Choose `https://yumina.io`, connect to the Internet, and use your account on that hosted service. Keeping a personal server running applies to custom self-hosted deployments. Available features and sign-in flows come from the selected deployment.
 
 ## Is the bundled certificate a secret?
 

@@ -4,13 +4,13 @@
 
 ## Separate deployment
 
-The Android client connects to a compatible web application at a user-selected origin. It does not start that application or include its database. The original associated project runs a Yumina-based Story Writer server, generally behind Caddy HTTPS on a PC.
+The Android client works with the native [Yumina.io](https://yumina.io) hosted service or a custom self-hosted version of Yumina at a user-selected origin. Enter `https://yumina.io` for the official service, or the HTTP(S) origin of your own installation. It does not start that application or include its database. The original associated custom project runs a Yumina-based Story Writer server, generally behind Caddy HTTPS on a PC.
 
 A plain browser-compatible UI can load without implementing the optional native integrations. The integrated App options links, Android-specific menu behavior, and conversation reconnect behavior depend on the server frontend.
 
 ## Network access
 
-The phone must reach the selected server through LAN, routed private network, VPN, or an appropriately deployed HTTPS address. A loopback-only backend cannot be accessed directly from another device. In the original setup, Caddy accepts connections on the PC and proxies them to the loopback application port.
+Native Yumina.io requires Internet access and does not require the user to run a PC server. A custom self-hosted installation must be reachable through LAN, routed private network, VPN, or an appropriately deployed HTTPS address. A loopback-only backend cannot be accessed directly from another device. In the original setup, Caddy accepts connections on the PC and proxies them to the loopback application port.
 
 Firewall rules, DNS, VPN routing, router settings, server process supervision, and model-provider connectivity belong to the server deployment. The APK cannot fix them. It has no server discovery or port-forwarding feature.
 

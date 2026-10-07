@@ -1,8 +1,8 @@
 # Story Writer Android
 
-**An Android client for a self-hosted AI storytelling server, built with Java and Android WebView.** Connect your phone to your own Story Writer / Yumina-based server to use its stories, worlds, chat, World Library, and account tools in an installable Android app.
+**An Android client that works with the native [Yumina.io](https://yumina.io) service or a custom self-hosted version of Yumina, built with Java and Android WebView.** Use the official hosted service or connect to your own Yumina-based server to access its worlds, stories, chat, and account tools in an installable Android app.
 
-This repository contains the Android application, its resources, connection tests, and build tools. The storytelling server is a separate application. Stories, accounts, memory, model configuration, and AI inference stay on that server; the phone supplies the interface and native device integration.
+This repository contains the Android application, its resources, connection tests, and build tools. Stories, accounts, memory, model configuration, and AI inference stay with the selected hosted service or self-hosted server; the phone supplies the interface and native device integration. Available features depend on the selected Yumina version and account permissions.
 
 The existing installed app is labelled **Yumina** and keeps package ID **`ai.storywriter.mobile`**. The repository name does not change the installed application's identity. Source extraction preserves the current client behavior, existing public CA, and signing compatibility with the original workspace.
 
@@ -17,6 +17,7 @@ The existing installed app is labelled **Yumina** and keeps package ID **`ai.sto
 | UI | Server web interface inside Android WebView, plus native connection and recovery controls |
 | Permission | `android.permission.INTERNET` |
 | Server connection | User-selected HTTP or HTTPS origin |
+| Supported destinations | Native Yumina.io hosted service or a custom self-hosted Yumina installation |
 | HTTPS trust | System CAs, user-installed CAs, and one bundled public server CA |
 | Files | Android document picker for uploads and Save file picker for exports |
 | Portable build | Python 3.10+, Windows x64, downloaded and SHA-256-checked JDK/build tools |
@@ -39,16 +40,23 @@ Server features available on the phone depend on the connected server version an
 
 ## Requirements for using the app
 
-You need an Android 8.0+ device with a functioning WebView provider, an installed APK, and a compatible server that is running and reachable from the phone. Use the same Wi-Fi network or a private network/VPN that reaches the server. Sign in with an account on that server if it uses multi-user authentication.
+You need an Android 8.0+ device with a functioning WebView provider and an installed APK. For the native Yumina.io service, use an Internet connection and enter `https://yumina.io`. For a custom self-hosted version of Yumina, enter its reachable HTTP(S) origin; a private deployment may require the same Wi-Fi network or a VPN. Sign in with an account on the selected service when authentication is required.
+
+| Connection choice | Address example | Hosting requirement |
+| --- | --- | --- |
+| Native Yumina.io | `https://yumina.io` | Internet access; no personal server required |
+| Custom self-hosted Yumina | `https://stories.example.com` or `https://192.168.1.20` | Your installation must be running and reachable |
+
+The standard WebView interface works independently of the optional custom-server App options and back-navigation hooks. Server-specific additions such as the World Library or custom administrator panels are available only where that deployment implements them.
 
 The APK does not contain an AI model, an independent story database, a server launcher, or offline story generation. It does not currently include push notifications or an automatic APK updater.
 
 ## Install and connect
 
-1. On the phone, open your server's Android download page, normally `https://YOUR-SERVER/app/android`, or obtain an APK from your server administrator.
+1. Obtain the signed APK from this app's maintainer or your server administrator. Custom deployments based on the original Story Writer server can also provide it at `https://YOUR-SERVER/app/android`; that download route is not required of the official Yumina.io service.
 2. Download the signed APK and allow installation from that browser or file source when Android requests it.
 3. Install and launch the app.
-4. Enter the server's origin, for example `https://192.168.1.20` or `https://stories.example.com`.
+4. Enter `https://yumina.io` for the native hosted service, or your custom server's origin, for example `https://192.168.1.20` or `https://stories.example.com`.
 5. Sign in and open your library or a chat.
 
 Enter an address without an application path, query, fragment, or embedded username/password. `localhost`, `127.0.0.1`, `::1`, and `0.0.0.0` are rejected because they do not identify your remote server. An address without a scheme currently defaults to HTTP; type `https://` explicitly when using HTTPS.

@@ -4,24 +4,25 @@
 
 ## The phone and the server
 
-The application gives you an Android home-screen entry for your storytelling server. The native layer remembers which server to use and handles the parts that benefit from Android integration: connection recovery, navigation, document selection, saving files, and local login/cache controls.
+The application gives you an Android home-screen entry for the native Yumina.io service or a custom self-hosted version of Yumina. The native layer remembers which service/server to use and handles the parts that benefit from Android integration: connection recovery, navigation, document selection, saving files, and local login/cache controls.
 
-The server supplies the main interface. Changing a story, creating a world, uploading a book, changing the model, or administering an account happens through that interface. Your phone is not the authoritative copy of those records. Your server must remain running and reachable while you use them.
+The selected service/server supplies the main interface and its available features. Changing a story, creating a world, uploading a book where supported, changing the model, or administering an account happens through that interface. Your phone is not the authoritative copy of those records. With native Yumina.io, the hosted service manages the server; with self-hosted Yumina, your installation must remain running and reachable.
 
 ## Before installation
 
-Check that the device runs Android 8.0 or newer and has an enabled, working Android WebView provider. Open the server's address in the phone's browser as a useful network diagnostic. Browser trust and app trust can differ because the app has an additional bundled certificate authority.
+Check that the device runs Android 8.0 or newer and has an enabled, working Android WebView provider. For native Yumina.io, connect to the Internet. For a private self-hosted version, use the network or VPN that reaches it. Open the selected address in the phone's browser as a useful network diagnostic. Browser trust and app trust can differ because the app has an additional bundled certificate authority.
 
-Obtain the APK from the administrator or the compatible server's `/app/android` page. The original deployment serves `yumina-android.apk` and a companion SHA-256 checksum. Installing an APK is separate from signing in; possession of the APK does not create a server account.
+Obtain the APK from the app maintainer or your self-hosted server administrator. The original custom deployment offers `/app/android` and serves `yumina-android.apk` with a companion SHA-256 checksum; that installation page is not a requirement for native Yumina.io. Installing an APK is separate from signing in; possession of the APK does not create a service account.
 
 Android asks the installing source, such as the browser, for permission to install applications from that source. Device manufacturers use different wording. This is an Android installation setting rather than an additional application runtime permission.
 
 ## First connection
 
-Launch the installed **Yumina** application. On a fresh installation the connection screen opens a **Server address** dialog. Enter the origin of the PC or server hosting the web application.
+Launch the installed **Yumina** application. On a fresh installation the connection screen opens a **Server address** dialog. Enter `https://yumina.io` for the native hosted service or the origin of your custom self-hosted Yumina installation.
 
 | Example | Meaning |
 | --- | --- |
+| `https://yumina.io` | Native, official Yumina hosted service |
 | `https://192.168.1.20` | HTTPS to a server at that LAN address, normally on port 443 |
 | `https://stories.example.com` | HTTPS to a server reachable through DNS |
 | `http://192.168.1.20:3000` | HTTP to an explicitly exposed application port |
